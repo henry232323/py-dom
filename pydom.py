@@ -25,6 +25,7 @@ h1 = partial(BuiltinElement, "h1")
 a = partial(BuiltinElement, "a")
 span = partial(BuiltinElement, "span")
 p = partial(BuiltinElement, "p")
+main = partial(BuiltinElement, "main")
 
 
 class Element(_h):
