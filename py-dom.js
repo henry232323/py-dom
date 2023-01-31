@@ -23,3 +23,7 @@ window.app = await pyodide.runPythonAsync(`
     app.render_root()
     app
 `)
+
+addEventListener("resize", (event) => {
+    app.render_tree()
+});

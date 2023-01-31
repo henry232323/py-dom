@@ -76,12 +76,13 @@ class h(Frag):
             raise ValueError(f"invalid html tag: {__name!r}")
         self.name = __name
 
-        self.attrs = dict(_normalize_attr(attr, value) for attr, value in attrs.items())
+        self.attrs = attrs
 
     def render_into(self, builder: List[str]) -> None:
         builder.append("<")
         builder.append(self.name)
         for attr, value in self.attrs.items():
+            attr, value = _normalize_attr(attr, value)
             if value is False or value is None:
                 # Falsy boolean attributes are omitted altogether:
                 # https://www.w3.org/TR/html52/infrastructure.html#sec-boolean-attributes
@@ -134,12 +135,15 @@ class _h(Frag):
         self.children = children
 
     def render_into(self, builder: List[str]) -> None:
-        self.tag.render_into(builder)
+        if self.tag is not None:
+            self.tag.render_into(builder)
         for child in self.children:
             render_into(child, builder)
-        builder.append("</")
-        builder.append(self.tag.name)
-        builder.append(">")
+
+        if self.tag is not None:
+            builder.append("</")
+            builder.append(self.tag.name)
+            builder.append(">")
 
 
 class raw(Frag):
@@ -191,8 +195,8 @@ def gen_callback(ident):
 
 
 def _normalize_attr(attr: str, value) -> (str, str):
-    if attr == "klass":
-        return "class"
+    if attr in ("klass", "_class"):
+        return "class", value
 
     if "_" in attr:
         attr = attr.rstrip("_").replace("_", "-")

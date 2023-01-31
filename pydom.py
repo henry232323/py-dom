@@ -19,6 +19,12 @@ div = partial(BuiltinElement, "div")
 h6 = partial(BuiltinElement, "h6")
 h5 = partial(BuiltinElement, "h5")
 h4 = partial(BuiltinElement, "h4")
+h3 = partial(BuiltinElement, "h3")
+h2 = partial(BuiltinElement, "h2")
+h1 = partial(BuiltinElement, "h1")
+a = partial(BuiltinElement, "a")
+span = partial(BuiltinElement, "span")
+p = partial(BuiltinElement, "p")
 
 
 class Element(_h):
