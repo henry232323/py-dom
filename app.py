@@ -13,7 +13,7 @@ class AwesomeCard(Element):
 
     @property
     def children(self):
-        return div(_class="col s6")(
+        return [div(_class="col s6")(
             div(_class="card blue-grey darken-1")(
                 div(_class="card-content white-text")(
                     span(_class="card-title")("Card Title"),
@@ -24,7 +24,7 @@ class AwesomeCard(Element):
                     a(onclick=self.onclick, _class="waves-effect waves-light btn")("Increment me!"),
                 )
             ),
-        )
+        )]
 
 
 class EpicElement(Element):
