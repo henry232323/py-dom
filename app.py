@@ -7,6 +7,9 @@ class AwesomeCard(Element):
     def onclick(self):
         self.buttonValue += 1
 
+    """
+    <div class="col s6">asd</div>
+    """
     @property
     def children(self):
         return div(_class="col s6")(
@@ -20,7 +23,7 @@ class AwesomeCard(Element):
                     a(onclick=self.onclick, _class="waves-effect waves-light btn")("Increment me!"),
                 )
             ),
-        ),
+        )
 
 
 class EpicElement(Element):
