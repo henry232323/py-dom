@@ -10,12 +10,13 @@ class AwesomeCard(Element):
     """
     <div class="col s6">asd</div>
     """
+
     @property
     def children(self):
         return div(_class="col s6")(
             div(_class="card blue-grey darken-1")(
                 div(_class="card-content white-text")(
-                    span(_class="card-title")(f"Card Title {self.buttonValue}"),
+                    span(_class="card-title")("Card Title"),
                     p()("I am a very simple card. I am good at containing small bits of information. "
                         "I am convenient because I require little markup to use effectively."),
                 ),

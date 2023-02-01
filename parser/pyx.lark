@@ -13,7 +13,7 @@
 
 single_input: _NEWLINE | simple_stmt | compound_stmt _NEWLINE
 file_input: (_NEWLINE | stmt)*
-eval_input: testlist _NEWLINE*
+// eval_input: testlist _NEWLINE*
 
 decorator: "@" dotted_name [ "(" [arguments] ")" ] _NEWLINE
 decorators: decorator+
@@ -192,11 +192,23 @@ AWAIT: "await"
 ?html_attr: name
           | name "=" atom_expr
 
+
+INNER_TEXT: /[\s\S]+?/
+
+?singhtmltag: "<" atom_expr (html_attr)* "/>"
+?innerhtml: htmltag
+          | singhtmltag
+          | innerhtml innerhtml
+          | INNER_TEXT
+
+?htmltag: "<" name (html_attr)*">" htmltag"</" name ">"
+        |  "<" name (html_attr)*">" "</" name ">"
+
 ?atom_expr: atom_expr "(" [arguments] ")"      -> funccall
           | atom_expr "[" subscriptlist "]"  -> getitem
           | atom_expr "." name               -> getattr
-          | "<" atom_expr (html_attr)* "/>" -> singhtmltag
-          | "<" name (html_attr)*">" atom_expr "</" name ">" -> htmltag
+          | singhtmltag
+          | htmltag
           | atom
 
 ?atom: "(" yield_expr ")"
