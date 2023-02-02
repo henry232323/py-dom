@@ -251,7 +251,7 @@ class ToAst(Transformer):
 
     def funcdef(self, s):
         debug("funcdef", s)
-        return ast.FunctionDef(s[0], s[1], s[3], s[2] or [], None, None)
+        return ast.FunctionDef(s[0], s[1], s[3], s[2] or [], None)
 
     def starparams(self, s):
         debug("starparams", s)
