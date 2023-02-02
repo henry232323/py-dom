@@ -66,7 +66,7 @@ class ToAst(Transformer):
         if len(children) == 3:
             return ast.AugAssign(children[0], ops[children[1][1]](), children[2])
         else:
-            return ast.Assign([children[0]], children[1], None)
+            return ast.Assign([children[0]], children[1])
 
     def html_attr(self, s):
         debug("html_attr", s)
@@ -376,7 +376,7 @@ transformer = ast_utils.create_transformer(this_module, ToAst())
 
 
 def parse(text):
-    tree = parser.parse(text)
+    tree = parser.parse(text + "\n")
     transformed = transformer.transform(tree)
     ast.fix_missing_locations(transformed)
     return transformed
