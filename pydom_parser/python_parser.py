@@ -2,7 +2,7 @@
 Grammar-complete Python Parser
 ==============================
 
-A fully-working Python 2 & 3 parser (but not production ready yet!)
+A fully-working Python 3 parser (but not production ready yet!)
 
 This example demonstrates usage of the included Python grammars
 """

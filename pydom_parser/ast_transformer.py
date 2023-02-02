@@ -3,7 +3,7 @@ import sys
 import astpretty as astpretty
 from lark import ast_utils, Transformer
 
-from python_parser import chosen_parser
+from .python_parser import chosen_parser
 
 this_module = sys.modules[__name__]
 
@@ -27,6 +27,7 @@ def create_keywords(items):
         keywords.append(ast.keyword(k, v))
 
     return keywords
+
 
 class ToAst(Transformer):
     # Define extra transformation functions, for rules that don't correspond to an AST class.
@@ -52,7 +53,7 @@ class ToAst(Transformer):
         return s[0].value
 
     def assign_stmt(self, s):
-        print(1, s)
+        debug(1, s)
         tree = s[0]
         children = tree.children
         if isinstance(children[0], (ast.Attribute, ast.List, ast.Tuple)):
@@ -68,13 +69,13 @@ class ToAst(Transformer):
             return ast.Assign([children[0]], children[1], None)
 
     def html_attr(self, s):
-        print("html_attr", s)
+        debug("html_attr", s)
         if s[0] == "class":
             s[0] = "_class"
         return s
 
     def singhtmltag(self, s):
-        print(4, s)
+        debug(4, s)
         if len(s) == 1:
             return ast.Call(ast.Name(s[0], ast.Load()), [], [])
         elif len(s) == 2:
@@ -102,7 +103,7 @@ class ToAst(Transformer):
         return s
 
     def htmltag(self, s):
-        print(5, s)
+        debug(5, s)
         if len(s) == 3:
             if s[0] != s[2]:
                 raise SyntaxError(f"Unmatched tag <{s[0].id}>")
@@ -206,7 +207,7 @@ class ToAst(Transformer):
         return ast.Return(s[0])
 
     def funcdef(self, s):
-        print("funcdef", s)
+        debug("funcdef", s)
         return ast.FunctionDef(s[0], s[1], s[3], s[2] or [], None, None)
 
     def starparams(self, s):
@@ -321,78 +322,33 @@ transformer = ast_utils.create_transformer(this_module, ToAst())
 
 def parse(text):
     tree = parser.parse(text)
-    return transformer.transform(tree)
+    transformed = transformer.transform(tree)
+    ast.fix_missing_locations(transformed)
+    return transformed
+
+
+import autopep8
+import astunparse
+
+
+def transpile(source):
+    tree = parse(source)
+    ast.fix_missing_locations(tree)
+    formatted = autopep8.fix_code(astunparse.unparse(tree))
+    return formatted
 
 
 #
 #   Test
 #
-import astunparse
-import autopep8
+
 
 if __name__ == '__main__':
-    source = '''
-from pydom import Element, div, a, span, p, main
+    source = "\n"
 
-
-class AwesomeCard(Element):
-    buttonValue = 0
-
-    def onclick(self):
-        self.buttonValue += 1
-
-    @property
-    def children(self):
-        return [
-            (<div class={"col s6"} style={dict(padding=2)}>
-                <div class={"card blue-grey darken-1"}>
-                    <div class="card-content white-text">
-                        <span class={"card-title"}>
-                            {f"Card Title {self.buttonValue}"}
-                        </span>
-                        <p>
-                            {"I am a very simple card. I am good at containing small bits of information. "
-                            "I am convenient because I require little markup to use effectively."}
-                        </p>
-                    </div>
-                    <div class={"card-action"}>
-                        <a onclick={self.onclick} class={"waves-effect waves-light btn"}>
-                            {"Increment me!"}
-                        </a>
-                    </div>
-                </div>
-            </div>)
-        ]
-
-
-class EpicElement(Element):
-
-    @property
-    def children(self):
-        return [
-            (<main>
-                <div class={"container"}>
-                    <div class={"row"}>
-                        <AwesomeCard/>
-                        <AwesomeCard/>
-                    </div>
-                </div>
-            </main>)
-        ]
-
-
-class App(Element):
-    @property
-    def children(self):
-        return [(<EpicElement/>)]
-
-'''
-
-    import flake8
     # print(astpretty.pprint(ast.parse(source)))
-    # print(parser.parse(source))
+    # print(pydom_parser.parse(source))
     tree = parse(source)
-    ast.fix_missing_locations(tree)
     astpretty.pprint(tree)
     formatted = autopep8.fix_code(astunparse.unparse(tree))
     compile(tree, "<ast>", "exec")
