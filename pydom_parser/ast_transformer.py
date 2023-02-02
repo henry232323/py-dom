@@ -29,6 +29,13 @@ def create_keywords(items):
     return keywords
 
 
+def gen_args(posonlyargs, args, vararg, kwonlyargs, kw_defaults, kwarg, defaults):
+    try:
+        return ast.arguments(posonlyargs, args, vararg, kwonlyargs, kw_defaults, kwarg, defaults)
+    except:
+        ast.arguments(args, vararg, kwonlyargs, kw_defaults, kwarg, defaults)
+
+
 class ToAst(Transformer):
     # Define extra transformation functions, for rules that don't correspond to an AST class.
     def var(self, s):
@@ -82,7 +89,7 @@ class ToAst(Transformer):
             result = item
         else:
             result = ast.Lambda(
-                ast.arguments([], [], None, [], [], None, []),
+                gen_args([], [], None, [], [], None, []),
                 item
             )
 
@@ -106,7 +113,7 @@ class ToAst(Transformer):
 
     def inline_html_expr(self, s):
         debug('inline_html_expr', s)
-        return ast.Lambda(ast.arguments([], [], None, [], [], None, []), s)
+        return ast.Lambda(gen_args([], [], None, [], [], None, []), s)
 
     def innerhtml_items(self, s):
         debug("innerhtml_items", s)
@@ -132,7 +139,7 @@ class ToAst(Transformer):
                 result.append(item)
             else:
                 result.append(ast.Lambda(
-                    ast.arguments([], [], None, [], [], None, []),
+                    gen_args([], [], None, [], [], None, []),
                     item
                 ))
         return result
@@ -312,7 +319,7 @@ class ToAst(Transformer):
                             args.append(key)
                             defaults.append(val)
 
-        return ast.arguments(
+        return gen_args(
             posonlyargs,
             args,
             vararg,  # todo: posonly
