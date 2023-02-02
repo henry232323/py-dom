@@ -190,25 +190,34 @@ star_expr: "*" expr
 AWAIT: "await"
 
 ?html_attr: name
-          | name "=" atom_expr
+          | name "=" "{" atom_expr "}"
+          | name "=" string
+          | "{" atom_expr "}"
 
 
 INNER_TEXT: /[\s\S]+?/
+CLOSESINGLE: "/>"
+CLOSETAG: "</"
 
-?singhtmltag: "<" atom_expr (html_attr)* "/>"
+?inline_html_expr : "{" atom_expr "}"
+?singhtmltag: "<" name html_attrs "/>"
 ?innerhtml: htmltag
           | singhtmltag
-          | innerhtml innerhtml
-          | INNER_TEXT
+          | inline_html_expr
+          | _INDENT
+          | _NEWLINE
+          | _DEDENT
 
-?htmltag: "<" name (html_attr)*">" htmltag"</" name ">"
-        |  "<" name (html_attr)*">" "</" name ">"
+?innerhtml_items: innerhtml*
+?html_attrs: (html_attr)*
+
+?htmltag: "<" name html_attrs ">" innerhtml_items "</" name ">"
 
 ?atom_expr: atom_expr "(" [arguments] ")"      -> funccall
           | atom_expr "[" subscriptlist "]"  -> getitem
           | atom_expr "." name               -> getattr
           | singhtmltag
-          | htmltag
+          | "(" htmltag ")"
           | atom
 
 ?atom: "(" yield_expr ")"

@@ -21,6 +21,13 @@ def debug(*args, **kwargs):
         print(*args, **kwargs)
 
 
+def create_keywords(items):
+    keywords = []
+    for k, v in items:
+        keywords.append(ast.keyword(k, v))
+
+    return keywords
+
 class ToAst(Transformer):
     # Define extra transformation functions, for rules that don't correspond to an AST class.
     def var(self, s):
@@ -30,9 +37,11 @@ class ToAst(Transformer):
     def number(self, s):
         debug('number', s)
         return ast.parse(s[0].value, mode='eval').body
+
     def string(self, s):
         debug('string', s)
         return ast.parse(s[0].value, mode='eval').body
+
     def string_concat(self, s):
         debug('string', s)
         s[0].value += s[1].value
@@ -43,7 +52,7 @@ class ToAst(Transformer):
         return s[0].value
 
     def assign_stmt(self, s):
-        debug(1, s)
+        print(1, s)
         tree = s[0]
         children = tree.children
         if isinstance(children[0], (ast.Attribute, ast.List, ast.Tuple)):
@@ -58,17 +67,69 @@ class ToAst(Transformer):
         else:
             return ast.Assign([children[0]], children[1], None)
 
+    def html_attr(self, s):
+        print("html_attr", s)
+        if s[0] == "class":
+            s[0] = "_class"
+        return s
+
     def singhtmltag(self, s):
-        debug(4, s)
+        print(4, s)
         if len(s) == 1:
-            return ast.Call(ast.Call(s[0], [], []), [], [])
+            return ast.Call(ast.Name(s[0], ast.Load()), [], [])
+        elif len(s) == 2:
+            if (
+                    s[1] and
+                    not isinstance(s[1][0], list)
+            ):
+                s[1] = [s[1]]
+            return ast.Call(ast.Name(s[0], ast.Load()), [], create_keywords(s[1]))
+
+    def inline_html_expr(self, s):
+        debug('inline_html_expr', s)
+        return s
+
+    def innerhtml_items(self, s):
+        debug("innerhtml_items", s)
+        return [ast.Name(item, ast.Load()) if isinstance(item, str) else item for item in s]
+
+    def innerhtml(self, s):
+        debug("innerhtml", s)
+        return s
+
+    def html_attrs(self, s):
+        debug("html_attrs", s)
+        return s
 
     def htmltag(self, s):
         print(5, s)
         if len(s) == 3:
             if s[0] != s[2]:
-                raise SyntaxError(f"Unmatch tag <{s[0].id}>")
-            return ast.Call(ast.Call(s[0], [], []), [s[1]], [])
+                raise SyntaxError(f"Unmatched tag <{s[0].id}>")
+            return ast.Call(
+                ast.Call(ast.Name(s[0], ast.Load()), [], []),
+                [ast.Name(item, ast.Load()) if isinstance(item, str) else item for item in s[1]],
+                []
+            )
+        elif len(s) == 2:
+            if s[0] != s[1]:
+                raise SyntaxError(f"Unmatched tag <{s[0].id}>")
+            return ast.Call(ast.Call(ast.Name(s[0], ast.Load()), [], []), [], [])
+        elif len(s) == 4:
+            if s[0] != s[3]:
+                raise SyntaxError(f"Unmatched tag <{s[0].id}>")
+            if (
+                    s[1] and
+                    not isinstance(s[1][0], list)
+            ):
+                s[1] = [s[1]]
+            if not isinstance(s[2], list):
+                s[2] = [s[2]]
+            return ast.Call(
+                ast.Call(ast.Name(s[0], ast.Load()), [], create_keywords(s[1])),
+                [ast.Name(item, ast.Load()) if isinstance(item, str) else item for item in s[2]],
+                []
+            )
 
     def expr_stmt(self, s):
         debug(3, s)
@@ -132,7 +193,7 @@ class ToAst(Transformer):
         )
 
     def arguments(self, s):
-        print("arguments", s)
+        debug("arguments", s)
         return [ast.Name(arg, ast.Load()) if isinstance(arg, str) else arg for arg in s if arg]
 
     def suite(self, s):
@@ -143,9 +204,10 @@ class ToAst(Transformer):
 
     def return_stmt(self, s):
         return ast.Return(s[0])
+
     def funcdef(self, s):
-        debug("funcdef", s)
-        return ast.FunctionDef(s[0], s[1], s[3], s[2], None, None)
+        print("funcdef", s)
+        return ast.FunctionDef(s[0], s[1], s[3], s[2] or [], None, None)
 
     def starparams(self, s):
         debug("starparams", s)
@@ -238,12 +300,16 @@ class ToAst(Transformer):
             s[0] = ast.Name(s[0], ast.Load())
         if not s[1]:
             s[1] = []
-        return ast.Call(s[0], [x for x in s[1] if not isinstance(x, ast.keyword)], [x for x in s[1] if isinstance(x, ast.keyword)])
+        return ast.Call(s[0], [x for x in s[1] if not isinstance(x, ast.keyword)],
+                        [x for x in s[1] if isinstance(x, ast.keyword)])
 
     def list(self, s):
         return ast.List(s, ast.Load())
+
     def tuple(self, s):
         return ast.Tuple(s, ast.Load())
+
+
 #
 #   Define Parser
 #
@@ -266,20 +332,69 @@ import autopep8
 
 if __name__ == '__main__':
     source = '''
-<a>
-    <b/>
-</a>
+from pydom import Element, div, a, span, p, main
+
+
+class AwesomeCard(Element):
+    buttonValue = 0
+
+    def onclick(self):
+        self.buttonValue += 1
+
+    @property
+    def children(self):
+        return [
+            (<div class={"col s6"} style={dict(padding=2)}>
+                <div class={"card blue-grey darken-1"}>
+                    <div class="card-content white-text">
+                        <span class={"card-title"}>
+                            {f"Card Title {self.buttonValue}"}
+                        </span>
+                        <p>
+                            {"I am a very simple card. I am good at containing small bits of information. "
+                            "I am convenient because I require little markup to use effectively."}
+                        </p>
+                    </div>
+                    <div class={"card-action"}>
+                        <a onclick={self.onclick} class={"waves-effect waves-light btn"}>
+                            {"Increment me!"}
+                        </a>
+                    </div>
+                </div>
+            </div>)
+        ]
+
+
+class EpicElement(Element):
+
+    @property
+    def children(self):
+        return [
+            (<main>
+                <div class={"container"}>
+                    <div class={"row"}>
+                        <AwesomeCard/>
+                        <AwesomeCard/>
+                    </div>
+                </div>
+            </main>)
+        ]
+
+
+class App(Element):
+    @property
+    def children(self):
+        return [(<EpicElement/>)]
+
 '''
 
-
-
+    import flake8
     # print(astpretty.pprint(ast.parse(source)))
+    # print(parser.parse(source))
     tree = parse(source)
     ast.fix_missing_locations(tree)
     astpretty.pprint(tree)
+    formatted = autopep8.fix_code(astunparse.unparse(tree))
     compile(tree, "<ast>", "exec")
-    try:
-        compile(tree, "<ast>", "exec")
-    except Exception as e:
-        print(e)
-    print(autopep8.fix_code(astunparse.unparse(tree)))
+    with open("output.py", 'w') as of:
+        of.write(formatted.strip() + "\n")
