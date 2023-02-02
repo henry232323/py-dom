@@ -69,7 +69,7 @@ class ToAst(Transformer):
             return ast.Assign([children[0]], children[1], None)
 
     def html_attr(self, s):
-        print("html_attr", s)
+        debug("html_attr", s)
         if s[0] == "class":
             s[0] = "_class"
 
@@ -105,7 +105,7 @@ class ToAst(Transformer):
         return result
 
     def inline_html_expr(self, s):
-        print('inline_html_expr', s)
+        debug('inline_html_expr', s)
         return ast.Lambda(ast.arguments([], [], None, [], [], None, []), s)
 
     def innerhtml_items(self, s):
@@ -138,7 +138,7 @@ class ToAst(Transformer):
         return result
 
     def htmltag(self, s):
-        print(5, s)
+        debug(5, s)
         result = None
         if len(s) == 3:
             if s[0] != s[2]:
@@ -247,28 +247,28 @@ class ToAst(Transformer):
         return ast.FunctionDef(s[0], s[1], s[3], s[2] or [], None, None)
 
     def starparams(self, s):
-        print("starparams", s)
+        debug("starparams", s)
         return [s[0]] + s[1]
 
     def starguard(self, s):
         return "*"
 
     def starparam(self, s):
-        print("starparam", s)
+        debug("starparam", s)
         return ('vararg', ast.arg(s[0]))
 
     def poststarparams(self, s):
-        print("poststarparams", s)
+        debug("poststarparams", s)
         return s
 
     def paramvalue(self, s):
-        print("paramvalue", s)
+        debug("paramvalue", s)
         return (ast.arg(s[0]), s[1])
 
     def parameters(self, s):
-        print("params 1", s)
+        debug("params 1", s)
         parts = [list(g) for k, g in itertools.groupby(s, type)]
-        print("params", parts)
+        debug("params", parts)
 
         posonlyargs = []
         args = []
@@ -285,7 +285,7 @@ class ToAst(Transformer):
                 starred = True
             if part and isinstance(part[0], list):
                 parts = [list(g) for k, g in itertools.groupby(part[0], type)] + parts
-                print(parts)
+                debug(parts)
             elif part and isinstance(part[0], Token):
                 slashed = True
                 posonlyargs.extend(args)
@@ -323,7 +323,7 @@ class ToAst(Transformer):
         )
 
     def kwparams(self, s):
-        print('kwparams', s)
+        debug('kwparams', s)
         return ('kwarg', ast.arg(s[0]))
 
     def decorated(self, s):
@@ -391,3 +391,9 @@ def transpile(source):
     ast.fix_missing_locations(tree)
     formatted = autopep8.fix_code(astunparse.unparse(tree))
     return formatted
+
+
+def transpile_file(path, output_path):
+    with open(path, 'r') as inputfile:
+        with open(output_path, 'w') as outputfile:
+            outputfile.write(transpile(inputfile.read()))

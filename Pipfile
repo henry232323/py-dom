@@ -1,0 +1,10 @@
+[[source]]
+name = 'pydom'
+
+[requires]
+python_version = '3.7'
+
+[packages]
+lark = '>1.1.5'
+autopep8 = '>2.0.1'
+astunparse = '>1.6.3'
