@@ -44,6 +44,8 @@ SupportsRender = Union[str, int, Frag, None, Iterable[Union[str, int, Frag, None
 
 
 def render_into(frag: SupportsRender, builder: List[str]) -> None:
+    if callable(frag):
+        frag = frag()
     if frag is None:
         return
     elif isinstance(frag, str):
@@ -195,6 +197,8 @@ def gen_callback(ident):
 
 
 def _normalize_attr(attr: str, value) -> (str, str):
+    if callable(value):
+        value = value()
     if attr in ("klass", "_class"):
         return "class", value
 

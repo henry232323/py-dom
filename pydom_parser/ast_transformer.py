@@ -1,7 +1,7 @@
+import itertools
 import sys
 
-import astpretty as astpretty
-from lark import ast_utils, Transformer
+from lark import ast_utils, Transformer, Token
 
 from .python_parser import chosen_parser
 
@@ -69,26 +69,44 @@ class ToAst(Transformer):
             return ast.Assign([children[0]], children[1], None)
 
     def html_attr(self, s):
-        debug("html_attr", s)
+        print("html_attr", s)
         if s[0] == "class":
             s[0] = "_class"
-        return s
+
+        item = s[1]
+        if isinstance(item, str):
+            item = ast.Name(item, ast.Load())
+        if isinstance(item, ast.Call) and getattr(item, "is_htmltag", False):
+            result = item
+        elif isinstance(item, ast.Constant):
+            result = item
+        else:
+            result = ast.Lambda(
+                ast.arguments([], [], None, [], [], None, []),
+                item
+            )
+
+        return s[0], result
 
     def singhtmltag(self, s):
         debug(4, s)
+        result = None
         if len(s) == 1:
-            return ast.Call(ast.Name(s[0], ast.Load()), [], [])
+            result = ast.Call(ast.Name(s[0], ast.Load()), [], [])
         elif len(s) == 2:
             if (
                     s[1] and
                     not isinstance(s[1][0], list)
             ):
                 s[1] = [s[1]]
-            return ast.Call(ast.Name(s[0], ast.Load()), [], create_keywords(s[1]))
+            result = ast.Call(ast.Name(s[0], ast.Load()), [], create_keywords(s[1]))
+
+        result.is_htmltag = True
+        return result
 
     def inline_html_expr(self, s):
-        debug('inline_html_expr', s)
-        return s
+        print('inline_html_expr', s)
+        return ast.Lambda(ast.arguments([], [], None, [], [], None, []), s)
 
     def innerhtml_items(self, s):
         debug("innerhtml_items", s)
@@ -102,35 +120,53 @@ class ToAst(Transformer):
         debug("html_attrs", s)
         return s
 
+    @staticmethod
+    def build_htmltag_body(items):
+        result = []
+        for item in items:
+            if isinstance(item, str):
+                item = ast.Name(item, ast.Load())
+            if isinstance(item, ast.Call) and getattr(item, "is_htmltag", False):
+                result.append(item)
+            elif isinstance(item, ast.Constant):
+                result.append(item)
+            else:
+                result.append(ast.Lambda(
+                    ast.arguments([], [], None, [], [], None, []),
+                    item
+                ))
+        return result
+
     def htmltag(self, s):
-        debug(5, s)
+        print(5, s)
+        result = None
         if len(s) == 3:
             if s[0] != s[2]:
                 raise SyntaxError(f"Unmatched tag <{s[0].id}>")
-            return ast.Call(
+            result = ast.Call(
                 ast.Call(ast.Name(s[0], ast.Load()), [], []),
-                [ast.Name(item, ast.Load()) if isinstance(item, str) else item for item in s[1]],
+                self.build_htmltag_body(s[1]),
                 []
             )
         elif len(s) == 2:
             if s[0] != s[1]:
                 raise SyntaxError(f"Unmatched tag <{s[0].id}>")
-            return ast.Call(ast.Call(ast.Name(s[0], ast.Load()), [], []), [], [])
+            result = ast.Call(ast.Call(ast.Name(s[0], ast.Load()), [], []), [], [])
         elif len(s) == 4:
             if s[0] != s[3]:
                 raise SyntaxError(f"Unmatched tag <{s[0].id}>")
-            if (
-                    s[1] and
-                    not isinstance(s[1][0], list)
-            ):
+            if (s[1] and not isinstance(s[1], list)):
                 s[1] = [s[1]]
             if not isinstance(s[2], list):
                 s[2] = [s[2]]
-            return ast.Call(
+            result = ast.Call(
                 ast.Call(ast.Name(s[0], ast.Load()), [], create_keywords(s[1])),
-                [ast.Name(item, ast.Load()) if isinstance(item, str) else item for item in s[2]],
+                self.build_htmltag_body(s[2]),
                 []
             )
+
+        result.is_htmltag = True
+        return result
 
     def expr_stmt(self, s):
         debug(3, s)
@@ -211,23 +247,29 @@ class ToAst(Transformer):
         return ast.FunctionDef(s[0], s[1], s[3], s[2] or [], None, None)
 
     def starparams(self, s):
-        debug("starparams", s)
-        return ('starparams', s)
+        print("starparams", s)
+        return [s[0]] + s[1]
+
+    def starguard(self, s):
+        return "*"
 
     def starparam(self, s):
-        debug("starparam", s)
+        print("starparam", s)
         return ('vararg', ast.arg(s[0]))
 
     def poststarparams(self, s):
-        debug("poststarparams", s)
-        return ('kwargs', s)
+        print("poststarparams", s)
+        return s
 
     def paramvalue(self, s):
-        debug("paramvalue", s)
+        print("paramvalue", s)
         return (ast.arg(s[0]), s[1])
 
     def parameters(self, s):
-        debug("params", s)
+        print("params 1", s)
+        parts = [list(g) for k, g in itertools.groupby(s, type)]
+        print("params", parts)
+
         posonlyargs = []
         args = []
         vararg = None
@@ -235,28 +277,40 @@ class ToAst(Transformer):
         kw_defaults = []
         kwarg = None
         defaults = []
-        for item in s:
-            if isinstance(item, str):
-                args.append(ast.arg(item))
-            elif isinstance(item, tuple):
-                name, starparams = item
-                assert name == 'starparams'
-                for subname, value in starparams:
-                    if subname == 'vararg':
-                        vararg = value
-                    elif subname == 'kwargs':
-                        for kw in value:
-                            if isinstance(kw, tuple):
-                                if isinstance(kw[1], ast.arg):
-                                    kwarg = kw[1]
-                                else:
-                                    kwonlyargs.append(kw[0])
-                                    kw_defaults.append(kw[1])
-                            elif isinstance(kw, str):
-                                kwonlyargs.append(ast.arg(kw))
-                                kw_defaults.append(None)
+        starred = False
+        slashed = False
+        while parts:
+            part = parts.pop(0)
+            if part == "*":
+                starred = True
+            if part and isinstance(part[0], list):
+                parts = [list(g) for k, g in itertools.groupby(part[0], type)] + parts
+                print(parts)
+            elif part and isinstance(part[0], Token):
+                slashed = True
+                posonlyargs.extend(args)
+                args = []
+            elif part and isinstance(part[0], str):
+                if not starred:
+                    args.extend(ast.arg(x) for x in part)
+                else:
+                    kwonlyargs.extend([ast.arg(c) for c in part])
+                    kw_defaults.extend([None for c in part])
+            elif part and isinstance(part[0], tuple):
+                for key, val in part:
+                    if isinstance(key, str):
+                        if key == "vararg":
+                            vararg = val
+                        elif key == "kwarg":
+                            kwarg = val
+                        starred = True
                     else:
-                        raise SyntaxError(f"How did this happen {subname}")
+                        if starred:
+                            kwonlyargs.append(key)
+                            kw_defaults.append(val)
+                        else:
+                            args.append(key)
+                            defaults.append(val)
 
         return ast.arguments(
             posonlyargs,
@@ -269,6 +323,7 @@ class ToAst(Transformer):
         )
 
     def kwparams(self, s):
+        print('kwparams', s)
         return ('kwarg', ast.arg(s[0]))
 
     def decorated(self, s):
@@ -336,21 +391,3 @@ def transpile(source):
     ast.fix_missing_locations(tree)
     formatted = autopep8.fix_code(astunparse.unparse(tree))
     return formatted
-
-
-#
-#   Test
-#
-
-
-if __name__ == '__main__':
-    source = "\n"
-
-    # print(astpretty.pprint(ast.parse(source)))
-    # print(pydom_parser.parse(source))
-    tree = parse(source)
-    astpretty.pprint(tree)
-    formatted = autopep8.fix_code(astunparse.unparse(tree))
-    compile(tree, "<ast>", "exec")
-    with open("output.py", 'w') as of:
-        of.write(formatted.strip() + "\n")

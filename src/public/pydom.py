@@ -1,6 +1,6 @@
-from functools import partial
-import string
 import random
+import string
+from functools import partial
 from typing import List
 
 import js
@@ -30,16 +30,17 @@ main = partial(BuiltinElement, "main")
 class Element(_h):
     first_render = False
 
-    def __init__(self, _class='div', **attrs):
-        self.tag = BuiltinElement(_class, **attrs, id=''.join(random.choices(string.ascii_lowercase, k=8)))
+    def __init__(self, *, _class='div', **attrs):
+        super().__init__(
+            BuiltinElement(_class, **attrs, id=''.join(random.choices(string.ascii_lowercase, k=8))),
+            tuple()
+        )
         self._init(**attrs)
 
     def _init(self, **attrs):
-        pass
+        self.children = [
 
-    @property
-    def children(self):
-        return []
+        ]
 
     def __setattr__(self, key, value):
         if getattr(self, key, None) != value:

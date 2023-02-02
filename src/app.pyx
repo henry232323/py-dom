@@ -7,9 +7,8 @@ class AwesomeCard(Element):
     def onclick(self):
         self.buttonValue += 1
 
-    @property
-    def children(self):
-        return [
+    def _init(self, **props):
+        self.children = [
             (<div class={"col s6"} style={dict(padding=2)}>
                 <div class={"card blue-grey darken-1"}>
                     <div class="card-content white-text">
@@ -33,9 +32,8 @@ class AwesomeCard(Element):
 
 class EpicElement(Element):
 
-    @property
-    def children(self):
-        return [
+    def _init(self, **props):
+        self.children = [
             (<main>
                 <div class={"container"}>
                     <div class={"row"}>
@@ -48,6 +46,5 @@ class EpicElement(Element):
 
 
 class App(Element):
-    @property
-    def children(self):
-        return [(<EpicElement/>)]
+    def _init(self, **props):
+        self.children = [(<EpicElement/>)]
