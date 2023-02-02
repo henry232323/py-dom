@@ -52,7 +52,7 @@ class ToAst(Transformer):
 
     def string_concat(self, s):
         debug('string', s)
-        s[0].value += s[1].value
+        s[0].s += s[1].s
         return s[0]
 
     def name(self, s):
@@ -181,7 +181,7 @@ class ToAst(Transformer):
 
     def file_input(self, s):
         debug("module", s)
-        return ast.Module(s, [])
+        return ast.Module(s)
 
     def import_from(self, s):
         debug("Import from", s)
