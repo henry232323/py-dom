@@ -1,10 +1,13 @@
 [[source]]
-name = 'pydom'
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
 
 [requires]
 python_version = '3.7'
 
 [packages]
-lark = '>1.1.5'
-autopep8 = '>2.0.1'
-astunparse = '>1.6.3'
+lark = '>=1.1.5'
+autopep8 = '>=2.0.1'
+astunparse = '>=1.6.3'
+astpretty = '>=3.0.0'
