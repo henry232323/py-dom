@@ -1,6 +1,9 @@
+import ast
 import itertools
 import sys
 
+import astunparse
+import autopep8
 from lark import ast_utils, Transformer, Token
 
 from .python_parser import chosen_parser
@@ -11,7 +14,6 @@ this_module = sys.modules[__name__]
 #   Define AST
 #
 
-import ast
 
 DEBUG = False
 
@@ -380,10 +382,6 @@ def parse(text):
     transformed = transformer.transform(tree)
     ast.fix_missing_locations(transformed)
     return transformed
-
-
-import autopep8
-import astunparse
 
 
 def transpile(source):

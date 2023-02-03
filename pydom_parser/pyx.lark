@@ -217,7 +217,7 @@ CLOSETAG: "</"
           | atom_expr "[" subscriptlist "]"  -> getitem
           | atom_expr "." name               -> getattr
           | singhtmltag
-          | "(" htmltag ")"
+          | htmltag
           | atom
 
 ?atom: "(" yield_expr ")"
