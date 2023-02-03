@@ -5,7 +5,7 @@ from typing import List
 
 import js
 
-from tinyhtml import h, _h
+from tinyhtml import h, _h, AttrDict
 
 
 class BuiltinElement(h):
@@ -35,9 +35,9 @@ class Element(_h):
             BuiltinElement(_class, **attrs, id=''.join(random.choices(string.ascii_lowercase, k=8))),
             tuple()
         )
-        self.build_children(**attrs)
+        self.build_children(AttrDict(attrs))
 
-    def build_children(self, **attrs):
+    def build_children(self, attrs):
         self.children = [
 
         ]

@@ -19,6 +19,7 @@ __all__ = [
 
 import abc
 from html import escape
+from inspect import ismethod
 from typing import Union, Dict, Iterable, List, Tuple
 
 import cssutils
@@ -45,9 +46,7 @@ SupportsRender = Union[str, int, Frag, None, Iterable[Union[str, int, Frag, None
 
 def render_into(frag: SupportsRender, builder: List[str]) -> None:
     if callable(frag):
-        print("callable", 1, frag)
         frag = frag()
-        print("callable", frag)
     if frag is None:
         return
     elif isinstance(frag, str):
@@ -220,3 +219,20 @@ def _normalize_attr(attr: str, value) -> (str, str):
         raise ValueError(f"invalid html attribute name: {attr!r}")
 
     return attr, value
+
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+    def __getattribute__(self, item):
+        attr = super().__getattribute__(item)
+        if callable(attr) and not ismethod(attr):
+            return attr()
+        return attr
+
+    def get(self, key):
+        attr = super().get(key)
+        if callable(attr) and not ismethod(attr):
+            return attr()
+        return attr

@@ -7,7 +7,7 @@ class AwesomeCard(Element):
     def onclick(self):
         self.button_value += 1
 
-    def build_children(self, **props):
+    def build_children(self, props):
         self.children = [
             (<div class={"col s6"} style={dict(padding=2)}>
                 <div class={"card blue-grey darken-1"}>
@@ -36,7 +36,7 @@ class EpicElement(Element):
     def change_card_title(self):
         self.card_one_title = "Even More Epic Title"
 
-    def build_children(self, **props):
+    def build_children(self, props):
         self.children = [
             <main>
                 <div class={"container"}>
@@ -55,5 +55,5 @@ class EpicElement(Element):
 
 
 class App(Element):
-    def build_children(self, **props):
+    def build_children(self, props):
         self.children = [(<EpicElement/>)]
