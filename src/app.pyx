@@ -2,18 +2,18 @@ from pydom import Element, div, a, span, p, main
 
 
 class AwesomeCard(Element):
-    buttonValue = 0
+    button_value = 0
 
     def onclick(self):
-        self.buttonValue += 1
+        self.button_value += 1
 
-    def _init(self, **props):
+    def build_children(self, **props):
         self.children = [
             (<div class={"col s6"} style={dict(padding=2)}>
                 <div class={"card blue-grey darken-1"}>
                     <div class="card-content white-text">
                         <span class={"card-title"}>
-                            {f"Card Title {self.buttonValue}"}
+                            {f"{props.get('text')} {self.button_value}"}
                         </span>
                         <p>
                             {"I am a very simple card. I am good at containing small bits of information. "
@@ -31,20 +31,29 @@ class AwesomeCard(Element):
 
 
 class EpicElement(Element):
+    card_one_title = "Prop Title"
 
-    def _init(self, **props):
+    def change_card_title(self):
+        self.card_one_title = "Even More Epic Title"
+
+    def build_children(self, **props):
         self.children = [
-            (<main>
+            <main>
                 <div class={"container"}>
                     <div class={"row"}>
-                        <AwesomeCard/>
-                        <AwesomeCard/>
+                        <AwesomeCard text={self.card_one_title}/>
+                        <AwesomeCard text={"Epic Prop Title"}/>
                     </div>
                 </div>
-            </main>)
+                <div class={"row"}>
+                    <a onclick={self.change_card_title} class={"waves-effect waves-light btn"} >
+                        {"Change Card Text"}
+                    </a>
+                </div>
+            </main>
         ]
 
 
 class App(Element):
-    def _init(self, **props):
+    def build_children(self, **props):
         self.children = [(<EpicElement/>)]

@@ -3,11 +3,8 @@ await pyodide.loadPackage("micropip")
 const micropip = pyodide.pyimport("micropip")
 
 const dependencies = [
-    "astpretty",
     "cssutils",
     "lark",
-    "autopep8",
-    "astunparse"
 ]
 
 for (const dependency of dependencies) {
@@ -20,13 +17,19 @@ const local_deps = [
     "pydom.py",
 ]
 
-const pyx_deps = [
+const pyx_files = [
     "pydom_parser/__init__.py",
     "pydom_parser/ast_transformer.py",
     "pydom_parser/import_handler.py",
     "pydom_parser/python_parser.py",
     "pydom_parser/unparse.py",
     "pydom_parser/pyx.lark",
+]
+
+const pyx_dependencies = [
+    "autopep8",
+    "astunparse",
+    "astpretty",
 ]
 
 await pyodide.runPythonAsync(`
@@ -90,7 +93,10 @@ app
 `
 
 if (use_pyx) {
-    for (const file of pyx_deps) {
+    for (const dependency of pyx_dependencies) {
+        await micropip.install(dependency)
+    }
+    for (const file of pyx_files) {
         await load_file(file)
     }
     main_source = `import pydom_parser\n` + main_source

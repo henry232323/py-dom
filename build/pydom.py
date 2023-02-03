@@ -35,9 +35,9 @@ class Element(_h):
             BuiltinElement(_class, **attrs, id=''.join(random.choices(string.ascii_lowercase, k=8))),
             tuple()
         )
-        self._init(**attrs)
+        self.build_children(**attrs)
 
-    def _init(self, **attrs):
+    def build_children(self, **attrs):
         self.children = [
 
         ]

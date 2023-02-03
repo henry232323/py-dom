@@ -45,7 +45,9 @@ SupportsRender = Union[str, int, Frag, None, Iterable[Union[str, int, Frag, None
 
 def render_into(frag: SupportsRender, builder: List[str]) -> None:
     if callable(frag):
+        print("callable", 1, frag)
         frag = frag()
+        print("callable", frag)
     if frag is None:
         return
     elif isinstance(frag, str):
@@ -210,6 +212,7 @@ def _normalize_attr(attr: str, value) -> (str, str):
 
     if callable(value):
         value = convert_function(value)
+
 
     # Slightly more restrictive than "Attribute names" in
     # https://www.w3.org/TR/html52/syntax.html#elements-attributes.
